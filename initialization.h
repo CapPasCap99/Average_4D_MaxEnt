@@ -19,6 +19,9 @@ std::vector<std::unordered_map<std::vector<int>, std::vector<int>, vec_hash>> lo
 
 
 void initialize(int thread_num, int step) {
+    std::cout << "Initializing thread " << thread_num << " with config " << step << std::endl;
+
+
 //    int stage = thread_num % number_of_stages;
     int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
 
