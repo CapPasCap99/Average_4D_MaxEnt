@@ -36,10 +36,16 @@ extern std::vector<std::unordered_map<std::pair<int, int>, int, pair_hash>> cont
 extern std::vector<std::unordered_map<std::pair<int, int>, int, pair_hash>> contacts_lin;
 extern std::vector<std::unordered_map<std::vector<int>, std::vector<int>, vec_hash>> locations_lin;
 
+
+extern const int total_simulations;
+extern const int number_of_stages;
+extern const int stage_count;
+extern const int replicates_per_stage;
 extern const int number_of_threads;
 extern std::vector<RandomGenerator> generators;
 extern const std::vector<int> stages;
-extern const int number_of_stages;
+extern const std::vector<int> reps;
+extern const std::vector<double> cell_len;
 extern const int mc_moves;
 extern double learning_rate;
 extern double learning_rate_far;

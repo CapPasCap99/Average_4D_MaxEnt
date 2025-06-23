@@ -512,17 +512,34 @@ void get_sim_params() {
     params << "Confinement/cell shape:" << '\n';
     params << "cell radius: " << radius << '\n';
     params << "cell lengths: ";
+    // for (int s = 0; s < number_of_stages; s++) {
+    //     params << std::setw(3) << length[s] << " ";
+    // }
     for (int s = 0; s < number_of_stages; s++) {
-        params << std::setw(3) << length[s] << " ";
+        for (int r = 0; r < replicates_per_stage; r++) {
+            int idx = s * replicates_per_stage + r;
+            params << std::setw(3) << length[idx] << " ";
+        }
+        params << '\n';
+        if (!use_fork_distribution) break;
     }
     params << '\n';
     params << "offset: " << offset[0] << " "<< offset[1] << '\n';
     params << "oriC: " << oriC << '\n';
     params << "lin_lengths: ";
-    for (int s = 0; s < number_of_threads; s++) {
-        params << std::setw(3) << lin_length[s] << " ";
-        if(not use_fork_distribution and s==number_of_stages-1){break;}
+    // for (int s = 0; s < number_of_threads; s++) {
+    //     params << std::setw(3) << lin_length[s] << " ";
+    //     if(not use_fork_distribution and s==number_of_stages-1){break;}
+    // }
+    for (int s = 0; s < number_of_stages; s++) {
+        for (int r = 0; r < replicates_per_stage; r++) {
+            int idx = s * replicates_per_stage + r;
+            params << std::setw(3) << lin_length[idx] << " ";
+        }
+        params << '\n';
+        if (!use_fork_distribution) break;
     }
+
     params << '\n';
 
     params <<'\n';

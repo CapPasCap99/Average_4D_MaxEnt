@@ -5,6 +5,7 @@
 #include "moves.h"
 using namespace Eigen;
 
+
 /*
 All of these maps store only physical monomers, ie polymer index/reduction_factor
 Makes maps 4*smaller, meaning searches are a lot faster.
@@ -22,8 +23,8 @@ void initialize(int thread_num, int step) {
     std::cout << "Initializing thread " << thread_num << " with config " << step << std::endl;
 
 
-//    int stage = thread_num % number_of_stages;
-    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
+    int stage = thread_num % number_of_stages;
+//    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
 
     // Set the values of is_replicated//
     for (int i = 0; i < pol_length; i++) {
@@ -162,8 +163,13 @@ void burn_in(int thread_num, int n_steps) {
     for (int m = 0; m < n_steps ; m++) {   //burn-in
         move(thread_num, m);
     }
-//    int stage = thread_num % number_of_stages;
-    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
+    int stage = thread_num % number_of_stages;
+//    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
+
+    assert(thread_num < total_simulations);
+    assert(stage < number_of_stages);
+    assert(!polymer[thread_num].empty());  // ensure initialization worked
+
 
     std::vector<double> zeroVec(bin_num, 0);
     std::fill(total_contacts[thread_num].begin(), total_contacts[thread_num].end(), zeroVec);

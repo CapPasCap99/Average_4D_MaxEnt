@@ -5,6 +5,8 @@
 #include "global.h"
 #include "energy_changes.h"
 
+//VERIFY THAT THE RIGHT STAGES OF REPLICATION ARE BEING CONSIDERED FOR  THE MOVES WITH COUTS
+
 //Note locations tracks physical monomers, ie pol index/reduction_factor. Same as indeces of total_contacts and contacts
 void update_contacts(int thread_num, int moved_site, Eigen::Vector3i prop_move, int m){
     if (moved_site%reduction_factor != 0){ //unphysical; not tracked
@@ -134,8 +136,8 @@ void update_locations_lin(int thread_num, int moved_site, Eigen::Vector3i prop_m
 
 
 bool constr_move(int thread_num, Eigen::Vector3i prop_move, int lin_pol, int site) {
-//    int stage = thread_num % number_of_stages;
-    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
+    int stage = thread_num % number_of_stages;
+//    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
     if (constrain_pol && site == oriC) {
         if (lin_pol) {
             if (std::abs(prop_move[2] - offset_z[stage]) > std::abs(polymer[thread_num][site][2] - offset_z[stage])) {
@@ -162,8 +164,8 @@ bool constr_move(int thread_num, Eigen::Vector3i prop_move, int lin_pol, int sit
 
 
 bool check_boundary_rest(Eigen::Vector3i prop_move1, int thread_num) {
-//    int stage = thread_num % number_of_stages;
-    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
+    int stage = thread_num % number_of_stages;
+//    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
     if (boundary_cond == 1) {
         bool accept_1;
         // GG: check for prop_move1
@@ -184,8 +186,8 @@ bool check_boundary_rest(Eigen::Vector3i prop_move1, int thread_num) {
 
 void junction_move(int thread_num, int site, int &m, int lin_pol) {
     int lin_site;
-//    int stage = thread_num % number_of_stages;
-    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
+    int stage = thread_num % number_of_stages;
+//    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
 
     //JM: Note: scheme below only works if the origin position is past the midway point of the polymer
     if (oriC + lin_length[stage] >= pol_length) { //JM: Replication has passed the 0-coordinate
@@ -381,8 +383,8 @@ void move(int thread_num, int &m) {
     //Pick site on linear or full chromosome:
     int site = (lin_pol==1) ? generators[thread_num].unisitelin() : generators[thread_num].unisitering();
 
-//    int stage = thread_num % number_of_stages;
-    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
+    int stage = thread_num % number_of_stages;
+//    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
 
     int old_m = m; //to make sure that for m%100==0 the z-position data is not saved again when no step was made
     //JM it seems like the relative position of the site is calculated twice: once to decide the move, and once while performing the move. This can be done more efficiently...
@@ -501,7 +503,7 @@ void move(int thread_num, int &m) {
                 }
             }
         }
-        if (m%res==0 && m>old_m) {
+        if (m%res==0 && m>old_m) { ///WHAT IS RES ??????
             z_close[thread_num] += polymer[thread_num][oriC][2];
             z_far[thread_num] += lin_polymer[thread_num][oriC][2];
             z_close_squared[thread_num] += pow(polymer[thread_num][oriC][2], 2);

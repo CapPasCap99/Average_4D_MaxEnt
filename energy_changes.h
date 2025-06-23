@@ -11,8 +11,8 @@ bool accept_move(int thread_num, const double& delta_E) {
 
 double delta_E_other(std::vector<Vector3i>& polym, std::vector<Vector3i>& other_polym, int site, Vector3i prop_move1, int thread_num, int lin_pol) {
     double energy_change = 0;
-//    int stage = thread_num % number_of_stages;
-    int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
+    int stage = thread_num % number_of_stages;
+ //   int stage = thread_num; //GG: when length.size()=numofthreads (needed for fork distribution)
 
     //Energies from contacts if (site+1)%pol_length is a physical monomer
     if((site+1)%reduction_factor==0){

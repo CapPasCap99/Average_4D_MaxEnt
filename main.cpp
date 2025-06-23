@@ -32,6 +32,8 @@ main.cpp
 
 NOW MODIFIED BY C.BERAUD
 to do an averaged over replication stages (0,10,30,45,60,75min) MaxEnt model.
+
+//IN 4D CODE EACH RUN IS ONE STAGE OF REPLICATION. EACH RUN IS ACTUALLY 3D.(SHOULD MAKE SURE OF THIS) I WANT TO HAVE ALL STAGES SIMULTADE IN ONE RUN. SO I NEED TO THINK HOW TO IMPLEMENT THIS.
 */
 #include <thread>
 #include <chrono>
@@ -43,49 +45,53 @@ to do an averaged over replication stages (0,10,30,45,60,75min) MaxEnt model.
 
 ////// Simulation properties //////
 const int number_of_threads = 30; //Number run in parallel
-const std::vector<int> sstage = {0, 10, 30, 45, 60, 75}; // Crescentus stages: {0, 10, 30, 45, 60, 75}
+const std::vector<int> stages = {0, 10, 30, 45, 60, 75}; // Crescentus stages: {0, 10, 30, 45, 60, 75}
 const std::vector<int> reps = {0, 72, 292, 456, 624, 788};
 const std::vector<double> cell_len = {1.8, 1.9, 2.2, 2.4, 2.8, 3.1};
 const int number_of_stages = stages.size(); //number of replication stages
-const int total_simulations = 30; // Total number of simulations
+const int total_simulations = 144; // Total number of simulations
 const int replicates_per_stage = total_simulations / stages.size();
 const int stage_count = number_of_stages;
+
 
 const std::string bacteria_name = "crescentus_separations_3"; //Determines which input files will be used
 //const int bin_num = 405; //Crescentus
 //const int reduction_factor = 4; //Crescentus
-const int bin_num = 15; //Crescentus zoomed
-const int reduction_factor = 1; //Crescentus zoomed
-const int oriC = 1220; // Crescentus   //position of the origin of replication. Determines where replication is initiated.
+const int bin_num = 405; //Crescentus zoomed
+const int reduction_factor = 4; //Crescentus zoomed
+const int oriC = 0; // Crescentus   //position of the origin of replication. Determines where replication is initiated.
 double radius{ 3.2 }; // Crescentus
 
 const int pol_length = reduction_factor*bin_num;
-const int mc_moves = 4e6;
-const int burn_in_steps = 3e7;
-const int it_steps = 80; //JM: number of steps inverse algorithm
+// const int mc_moves = 4e6;
+// const int burn_in_steps = 3e7;
+// const int it_steps = 80; //JM: number of steps inverse algorithm
+const int mc_moves = 4e2;
+const int burn_in_steps = 3e2;
+const int it_steps = 2; //JM: number of steps inverse algorithm
 bool boundary_cond = true;
 bool constrain_pol = true; // constrains one origin to always be the closer one to a cell pole
 
 ///////// initial configurations ////////////
-bool initConfig = true;
+bool initConfig = false;
 std::string configuration_data_folder = "configurations/";
-int init_config_number = 80; //iteration number of the initial configuration used
+int init_config_number = 0; //iteration number of the initial configuration used
 const int res{1000}; //JM: how often the mean positions are sampled
 
 ///////// initial energies //////////////
-bool initEnerg = true; //load initial energies?
-std::string energy_data_folder = configuration_data_folder;
-std::string energy_data_iteration = std::to_string(init_config_number);
+bool initEnerg = false; //load initial energies?
+std::string energy_data_folder = configuration_data_folder; //only used if initErg=True
+std::string energy_data_iteration = std::to_string(init_config_number);//only used if initErg=True
 
 ///////// input Hi-C data ////////////
 // std::string dir = "/";
 // std::string HiC_file = dir + "myfile.txt";
-std::string dir = "/home/capucine/Documents/test/4D/HiC_data/averaged_normalized_zoomout/";
-std::string HiC_file = dir + "downsamp_averaged_normalized_array.txt";
+std::string dir = "/home/capucine/Documents/test/4D/HiC_data/averaged_normalized/";
+std::string HiC_file = dir + "t_averaged_normalized_array_bio_weights.txt";
 
 ////// Learning rates //////
 // Should be a dynamical parameter! //
-double learning_rate{ 0.05 }; // contacts update
+double learning_rate{ 0.5 }; // contacts update
 
 //Unused learning rates 
 double learning_rate_close { 0 };
@@ -178,14 +184,11 @@ std::vector<std::vector<double>> xp_contacts(bin_num, std::vector<double>(bin_nu
 //What are those?// 
 std::vector<std::vector<double>> target_means;
 std::vector<std::vector<double>> target_separations;
-bool use_fork_distribution = false; // or true, depending on your needs
+bool use_fork_distribution = true; // or true, depending on your needs
 
 /////// cellular properties ///////
 std::vector<double> length; // cellular length
 std::vector<int> lin_length; // number of replicated sites (physical ones)
-
-
-
 
 /////// functions to be used later ///////
 void run(int thread_num, int move_num);
@@ -208,8 +211,8 @@ int main() {
     lin_length.resize(total_simulations);
     for (int i = 0; i < stage_count; i++) {
         for (int r = 0; r < replicates_per_stage; r++) {
-        lin_length[i * replicates_per_stage + r] = reps[i];
-        length[i * replicates_per_stage + r] = cell_len[i];
+            lin_length[i * replicates_per_stage + r] = reps[i];
+            length[i * replicates_per_stage + r] = cell_len[i];
         }
     }
     polymer.resize(total_simulations);
@@ -246,7 +249,7 @@ int main() {
 
         set_unconstrained_energies_to_zero();
     }
-    std::cout << "energy read (if exist) " ;
+    std::cout << "energy read (if exist). Spoiler alert: " << initEnerg;
 
     //Create output directory (with date and time in the name)//
     time_t time_now = time(0);   // get time now
@@ -275,7 +278,7 @@ for (int i = 0; i < total_simulations; i++) {
 
     // set values offset_z to calculate the center of the cell while accounting for odd cell-lengths??//
 for (int i = 0; i < total_simulations; i++) {
-    offset_z[i] = (lin_length[i] % 2) / 2.0;
+    offset_z[i] = (int(length[i] )% 2) / 2.0;
 }
 
     //Save the input parameters of the simulation in "sim_params.txt"//
@@ -295,6 +298,7 @@ for (int i = 0; i < total_simulations; i++) {
 
     auto start = std::chrono::high_resolution_clock::now();
     std::cout<<"Burning in..."<<std::endl;
+    
 
     //Burn in  configurations//
     std::vector<std::thread> burnThreads;
@@ -321,10 +325,13 @@ for (int i = 0; i < total_simulations; i++) {
             for (auto& t : threads) t.join();
         }
 
+        //MAKE SURE ALL STAGES ARE BEING RUN IN THE FORWARD RUN WITH COUTS IN MOVE FUNCTION
+
         //After all threads finish, their contact maps (total_contacts) are summed into a global matrix final_contacts//
-        std::vector<double> w(stage_count, 1.0);  // or custom weights to have biased weights, if not there are just uniform
+        std::vector<double> w = {1., 1., 1., 1., 0.9270073, 0.35766423}; 
         double w_sum = std::accumulate(w.begin(), w.end(), 0.0);
-        for (auto& wi : w) wi /= w_sum;
+        for (auto& wi : w) wi /= w_sum;  // Normalize to sum to 1
+
 
         for (int s = 0; s < stage_count; s++) {
             double weight = w[s] / replicates_per_stage;
